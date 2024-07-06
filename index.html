@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0; /* Light grey background */
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            border-radius: 20px; /* Rounded corners for the game board */
+            background-color: #fff; /* White background for the game board */
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for a subtle effect */
+            max-width: 90%; /* Ensure it doesn't overflow on smaller screens */
+            position: relative; /* Relative positioning for overlay */
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            margin-top: 20px;
+            border-radius: 20px; /* Rounded corners for the board */
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff;
+            border: 2px solid #333;
+            font-size: 2em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 20px; /* Rounded corners for each cell */
+        }
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+        .status {
+            margin: 20px 0;
+            font-size: 1.5em;
+        }
+        .reset-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 20px; /* Rounded corners for the reset button */
+            background-color: #333;
+            color: #fff;
+            border: none;
+        }
+        .reset-button:hover {
+            background-color: #555;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .overlay-text {
+            font-size: 3em;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status">Player X's turn</div>
+        <div class="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button class="reset-button">Reset Game</button>
+        <div class="overlay" id="overlay">
+            <div class="overlay-text" id="overlayText"></div>
+        </div>
+    </div>
+
+    <script>
+        const cells = document.querySelectorAll('.cell');
+        const statusText = document.querySelector('.status');
+        const resetButton = document.querySelector('.reset-button');
+        const overlay = document.getElementById('overlay');
+        const overlayText = document.getElementById('overlayText');
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let isGameActive = true;
+        let isDraw = false;
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        const handleCellClick = (event) => {
+            const cell = event.target;
+            const cellIndex = cell.getAttribute('data-index');
+
+            if (board[cellIndex] !== '' || !isGameActive || currentPlayer === 'O') {
+                return;
+            }
+
+            board[cellIndex] = currentPlayer;
+            cell.textContent = currentPlayer;
+
+            if (checkWinner()) {
+                showOverlay(`Player ${currentPlayer} wins!`);
+                isGameActive = false;
+            } else if (board.every(cell => cell !== '')) {
+                showOverlay('It\'s a draw!');
+                isGameActive = false;
+                isDraw = true;
+            } else {
+                currentPlayer = 'O';
+                statusText.textContent = `Player ${currentPlayer}'s turn`;
+                setTimeout(computerPlay, 500); // Delay AI move for better user experience
+            }
+        };
+
+        const computerPlay = () => {
+            if (!isGameActive) return;
+
+            // AI logic to find the best move
+            const bestMove = findBestMove();
+            
+            board[bestMove] = currentPlayer;
+            document.querySelector(`.cell[data-index="${bestMove}"]`).textContent = currentPlayer;
+
+            if (checkWinner()) {
+                showOverlay(`${currentPlayer} Winner!`);
+                isGameActive = false;
+            } else if (board.every(cell => cell !== '')) {
+                showOverlay('It\'s a draw!');
+                isGameActive = false;
+                isDraw = true;
+            } else {
+                currentPlayer = 'X';
+                statusText.textContent = `Player ${currentPlayer}'s turn`;
+            }
+        };
+
+        const findBestMove = () => {
+            // Check for a winning move
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'O';
+                    if (checkWinner()) {
+                        board[i] = '';
+                        return i;
+                    }
+                    board[i] = '';
+                }
+            }
+
+            // Check for a blocking move
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'X';
+                    if (checkWinner()) {
+                        board[i] = '';
+                        return i;
+                    }
+                    board[i] = '';
+                }
+            }
+
+            // Otherwise, make a random move
+            const emptyCells = board.map((cell, index) => cell === '' ? index : null).filter(index => index !== null);
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        };
+
+        const checkWinner = () => {
+            for (const condition of winningConditions) {
+                const [a, b, c] = condition;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const showOverlay = (message) => {
+            overlayText.textContent = message;
+            overlay.style.display = 'flex'; // Display the overlay
+        };
+
+        const hideOverlay = () => {
+            overlay.style.display = 'none'; // Hide the overlay
+        };
+
+        const resetGame = () => {
+            board = ['', '', '', '', '', '', '', '', ''];
+            isGameActive = true;
+            isDraw = false;
+            currentPlayer = 'X';
+            statusText.textContent = `Player ${currentPlayer}'s turn`;
+            cells.forEach(cell => cell.textContent = '');
+            hideOverlay(); // Hide overlay on reset
+        };
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', resetGame);
+
+        // Reset game on click anywhere if game is not active
+        document.addEventListener('click', (event) => {
+            if (!isGameActive && event.target !== resetButton) {
+                resetGame();
+            }
+        });
+    </script>
+</body>
+</html>
